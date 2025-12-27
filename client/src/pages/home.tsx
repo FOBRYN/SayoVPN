@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, Share2, Minus, X, Copy, Power } from "lucide-react";
+import { Menu, Share2, Minus, X, Copy, Power, Globe, Send, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,6 +8,7 @@ import logoUrl from "@assets/изображение_1766809894227.png";
 
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { toast } = useToast();
 
   const toggleConnection = () => {
@@ -17,18 +18,108 @@ export default function Home() {
   const copyKey = () => {
     navigator.clipboard.writeText("vless://57942d57-17e0-4875-80bc-...");
     toast({
-      title: "Copied!",
-      description: "Access key copied to clipboard",
+      title: "Скопировано!",
+      description: "Ключ доступа скопирован",
       className: "bg-background border border-primary/20 text-foreground",
     });
+  };
+
+  const openTelegram = () => {
+    window.open("https://t.me/SayoVPN_bot", "_blank");
+  };
+
+  const openWebsite = () => {
+    window.open("https://sayovpn.replit.app/", "_blank");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0f1e] text-slate-100 font-sans">
       <div className="w-full max-w-sm bg-[#0F1524] rounded-3xl shadow-2xl overflow-hidden border border-slate-800/50 relative flex flex-col h-[700px]">
+        
+        {/* Side Menu Overlay */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMenuOpen(false)}
+                className="absolute inset-0 bg-black/60 z-20"
+              />
+              
+              {/* Side Menu */}
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="absolute left-0 top-0 bottom-0 w-72 bg-[#0a0f1e] border-r border-slate-800 z-30 flex flex-col"
+              >
+                {/* Menu Header */}
+                <div className="p-6 border-b border-slate-800/50">
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={logoUrl} 
+                      alt="SayoVPN Logo" 
+                      className="w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(255,215,0,0.5)]"
+                    />
+                    <div>
+                      <h2 className="text-xl font-bold text-primary">SayoVPN</h2>
+                      <p className="text-xs text-slate-500">Быстрый и безопасный</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Menu Items */}
+                <div className="flex-1 p-4 space-y-2">
+                  <button
+                    onClick={openTelegram}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 hover:bg-primary/10 border border-slate-700/50 hover:border-primary/30 transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[#229ED9]/20 flex items-center justify-center">
+                      <Send className="w-5 h-5 text-[#229ED9]" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-medium text-slate-200 group-hover:text-primary transition-colors">Telegram Бот</p>
+                      <p className="text-xs text-slate-500">@SayoVPN_bot</p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-slate-600 group-hover:text-primary/50" />
+                  </button>
+
+                  <button
+                    onClick={openWebsite}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 hover:bg-primary/10 border border-slate-700/50 hover:border-primary/30 transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-medium text-slate-200 group-hover:text-primary transition-colors">Наш сайт</p>
+                      <p className="text-xs text-slate-500">sayovpn.replit.app</p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-slate-600 group-hover:text-primary/50" />
+                  </button>
+                </div>
+
+                {/* Menu Footer */}
+                <div className="p-4 border-t border-slate-800/50">
+                  <p className="text-xs text-slate-600 text-center">SayoVPN v1.0.0</p>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <header className="p-4 flex items-center justify-between z-10">
-          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary hover:bg-transparent">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsMenuOpen(true)}
+            className="text-slate-400 hover:text-primary hover:bg-transparent"
+          >
             <Menu className="w-6 h-6" />
           </Button>
           

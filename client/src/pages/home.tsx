@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Menu, Share2, Minus, X, Copy, Power, Globe, Send, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu, Share2, Minus, X, Copy, Power, Globe, Send, ExternalLink, Key, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,14 +9,27 @@ import logoUrl from "@assets/изображение_1766809894227.png";
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [keyInput, setKeyInput] = useState("");
+  const [isValidating, setIsValidating] = useState(false);
+  const [savedKey, setSavedKey] = useState("");
   const { toast } = useToast();
+
+  useEffect(() => {
+    const storedKey = localStorage.getItem("sayovpn_key");
+    if (storedKey) {
+      setSavedKey(storedKey);
+      setShowWelcome(false);
+    }
+  }, []);
 
   const toggleConnection = () => {
     setIsConnected(!isConnected);
   };
 
   const copyKey = () => {
-    navigator.clipboard.writeText("vless://57942d57-17e0-4875-80bc-...");
+    navigator.clipboard.writeText(savedKey || "vless://...");
     toast({
       title: "Скопировано!",
       description: "Ключ доступа скопирован",
@@ -32,8 +45,181 @@ export default function Home() {
     window.open("https://sayovpn.replit.app/", "_blank");
   };
 
+  const getKeyFromBot = () => {
+    window.open("https://t.me/SayoVPN_bot", "_blank");
+    setShowKeyInput(true);
+  };
+
+  const continueWithKey = () => {
+    setShowKeyInput(true);
+  };
+
+  const validateAndSaveKey = async () => {
+    if (!keyInput.trim()) {
+      toast({
+        title: "Ошибка",
+        description: "Введите ключ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsValidating(true);
+
+    try {
+      const response = await fetch("/api/keys/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: keyInput.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (data.valid) {
+        localStorage.setItem("sayovpn_key", keyInput.trim());
+        setSavedKey(keyInput.trim());
+        setShowWelcome(false);
+        setShowKeyInput(false);
+        toast({
+          title: "Успешно!",
+          description: "Ключ активирован",
+          className: "bg-background border border-primary/20 text-foreground",
+        });
+      } else {
+        toast({
+          title: "Неверный ключ",
+          description: "Получите ключ в Telegram боте @SayoVPN_bot",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось проверить ключ",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0f1e] text-slate-100 font-sans">
+      
+      {/* Welcome Modal */}
+      <AnimatePresence>
+        {showWelcome && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-[#0a0f1e] z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 20 }}
+              className="w-full max-w-sm bg-[#0F1524] rounded-3xl border border-slate-800/50 p-8 space-y-8"
+            >
+              {/* Logo */}
+              <div className="flex flex-col items-center gap-4">
+                <motion.img 
+                  src={logoUrl} 
+                  alt="SayoVPN Logo" 
+                  className="w-24 h-24 object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.4)]"
+                  initial={{ y: -20 }}
+                  animate={{ y: 0 }}
+                  transition={{ type: "spring", damping: 10, delay: 0.2 }}
+                />
+                <h1 className="text-3xl font-bold text-primary drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]">
+                  SayoVPN
+                </h1>
+                <p className="text-slate-400 text-center text-sm">
+                  Быстрый и безопасный VPN для вашей защиты
+                </p>
+              </div>
+
+              {/* Key Input Mode */}
+              {showKeyInput ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-slate-400">Введите ваш ключ:</label>
+                    <Input
+                      value={keyInput}
+                      onChange={(e) => setKeyInput(e.target.value)}
+                      placeholder="vless://xxxxxxxx-xxxx-xxxx-xxxx"
+                      className="bg-[#0a0f1e] border-slate-700 text-primary font-mono text-sm h-12 rounded-xl focus-visible:ring-primary/50"
+                    />
+                  </div>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={validateAndSaveKey}
+                    disabled={isValidating}
+                    className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-primary text-black font-bold text-lg hover:bg-primary/90 transition-colors shadow-[0_0_30px_rgba(255,215,0,0.3)] disabled:opacity-50"
+                  >
+                    {isValidating ? (
+                      <span>Проверка...</span>
+                    ) : (
+                      <>
+                        <Check className="w-5 h-5" />
+                        Активировать ключ
+                      </>
+                    )}
+                  </motion.button>
+
+                  <button
+                    onClick={() => setShowKeyInput(false)}
+                    className="w-full text-sm text-slate-500 hover:text-slate-400 transition-colors"
+                  >
+                    ← Назад
+                  </button>
+                </div>
+              ) : (
+                /* Buttons */
+                <div className="space-y-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={getKeyFromBot}
+                    className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-primary text-black font-bold text-lg hover:bg-primary/90 transition-colors shadow-[0_0_30px_rgba(255,215,0,0.3)]"
+                  >
+                    <Send className="w-5 h-5" />
+                    Получить ключ
+                  </motion.button>
+                  
+                  <p className="text-xs text-slate-500 text-center">
+                    Получите бесплатный ключ в нашем Telegram боте
+                  </p>
+
+                  <div className="relative py-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-800"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-[#0F1524] px-4 text-xs text-slate-600">или</span>
+                    </div>
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={continueWithKey}
+                    className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-slate-300 font-medium hover:border-primary/50 hover:text-primary transition-all"
+                  >
+                    <Key className="w-5 h-5" />
+                    У меня уже есть ключ
+                    <ArrowRight className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="w-full max-w-sm bg-[#0F1524] rounded-3xl shadow-2xl overflow-hidden border border-slate-800/50 relative flex flex-col h-[700px]">
         
         {/* Side Menu Overlay */}
@@ -210,14 +396,15 @@ export default function Home() {
               <div className="relative flex-1">
                 <Input 
                   readOnly
-                  value="vless://57942d57-17e0-4875-80bc-..." 
-                  className={`bg-[#0a0f1e] border-slate-800 font-mono text-xs h-12 rounded-xl pl-4 focus-visible:ring-primary/50 transition-colors ${isConnected ? "text-primary border-primary/30" : "text-green-400"}`}
+                  value={savedKey ? `${savedKey.substring(0, 30)}...` : "Ключ не активирован"} 
+                  className={`bg-[#0a0f1e] border-slate-800 font-mono text-xs h-12 rounded-xl pl-4 focus-visible:ring-primary/50 transition-colors ${isConnected ? "text-primary border-primary/30" : savedKey ? "text-green-400" : "text-slate-500"}`}
                 />
               </div>
               <Button 
                 onClick={copyKey}
                 variant="outline" 
-                className={`h-12 w-12 rounded-xl bg-[#0a0f1e] hover:bg-slate-800 transition-colors p-0 border-slate-800 ${isConnected ? "text-primary hover:text-primary border-primary/30" : "text-slate-400 hover:text-primary"}`}
+                disabled={!savedKey}
+                className={`h-12 w-12 rounded-xl bg-[#0a0f1e] hover:bg-slate-800 transition-colors p-0 border-slate-800 ${isConnected ? "text-primary hover:text-primary border-primary/30" : "text-slate-400 hover:text-primary"} disabled:opacity-50`}
               >
                 <Copy className="w-5 h-5" />
               </Button>

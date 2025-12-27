@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.sayovpn.app",
+  "productName": "SayoVPN",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "electron/main.js",
+    "electron/preload.js"
+  ],
+  "extraResources": [
+    {
+      "from": "electron/dist",
+      "to": "dist"
+    }
+  ],
+  "win": {
+    "target": "portable"
+  },
+  "portable": {
+    "artifactName": "SayoVPN-${version}.exe"
+  }
+}

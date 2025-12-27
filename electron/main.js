@@ -1,7 +1,7 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = !app.isPackaged;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -22,7 +22,8 @@ function createWindow() {
     win.loadURL('http://localhost:5173');
     win.webContents.openDevTools({ mode: 'detach' });
   } else {
-    win.loadFile(path.join(__dirname, '../dist/public/index.html'));
+    const distPath = path.join(process.resourcesPath, 'dist', 'index.html');
+    win.loadFile(distPath);
   }
 }
 

@@ -1,0 +1,40 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Move electron to devDeps
+        run: |
+          npm uninstall electron electron-builder
+          npm install --save-dev electron electron-builder
+
+      - name: Build Vite app
+        run: npx vite build --outDir electron/dist --base ./
+        
+      - name: Build exe
+        run: npx electron-builder --win portable
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SayoVPN-Windows
+          path: release/*.exe
+          retention-days: 30

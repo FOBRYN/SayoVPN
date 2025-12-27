@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import logoUrl from "@assets/изображение_1766809894227.png";
 
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
@@ -32,10 +33,12 @@ export default function Home() {
           </Button>
           
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">SayoVPN</span>
+            <img 
+              src={logoUrl} 
+              alt="SayoVPN Logo" 
+              className="w-8 h-8 object-contain drop-shadow-[0_0_5px_rgba(255,215,0,0.5)]"
+            />
+            <span className="text-xl font-bold tracking-tight text-primary drop-shadow-[0_0_8px_rgba(255,215,0,0.3)]">SayoVPN</span>
           </div>
 
           <div className="flex items-center gap-1">
@@ -63,7 +66,7 @@ export default function Home() {
                   initial={{ scale: 1, opacity: 0.5 }}
                   animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute inset-0 rounded-full border border-primary/30"
+                  className="absolute inset-0 rounded-full border-2 border-primary/40 bg-primary/5"
                 />
               )}
             </AnimatePresence>
@@ -73,7 +76,7 @@ export default function Home() {
                   initial={{ scale: 1, opacity: 0.3 }}
                   animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
                   transition={{ duration: 2, delay: 0.5, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute inset-0 rounded-full border border-primary/20"
+                  className="absolute inset-0 rounded-full border border-primary/30"
                 />
               )}
             </AnimatePresence>
@@ -84,12 +87,12 @@ export default function Home() {
               onClick={toggleConnection}
               className={`w-40 h-40 rounded-full flex items-center justify-center border-4 transition-all duration-500 relative z-10 ${
                 isConnected 
-                  ? "border-primary bg-primary/10 shadow-[0_0_50px_rgba(234,179,8,0.2)]" 
-                  : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                  ? "border-primary bg-primary/20 shadow-[0_0_50px_rgba(255,215,0,0.4)]" 
+                  : "border-slate-700 bg-slate-800/50 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(255,215,0,0.1)]"
               }`}
             >
               <Power className={`w-16 h-16 transition-all duration-500 ${
-                isConnected ? "text-primary drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" : "text-slate-500"
+                isConnected ? "text-primary drop-shadow-[0_0_15px_rgba(255,215,0,0.8)]" : "text-slate-500 group-hover:text-primary/70"
               }`} />
             </motion.button>
           </div>
@@ -99,11 +102,11 @@ export default function Home() {
             layout 
             className="text-center space-y-2"
           >
-            <h2 className={`text-2xl font-medium transition-colors duration-300 ${isConnected ? "text-primary" : "text-slate-400"}`}>
-              {isConnected ? "VPN connected" : "VPN disconnected"}
+            <h2 className={`text-2xl font-bold transition-all duration-300 tracking-wide ${isConnected ? "text-primary drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]" : "text-slate-400"}`}>
+              {isConnected ? "VPN подключён" : "VPN отключён"}
             </h2>
-            <p className="text-slate-500 text-sm">
-              {isConnected ? "Secure traffic encrypted" : "Tap to connect"}
+            <p className={`text-sm transition-colors duration-300 ${isConnected ? "text-primary/80" : "text-slate-500"}`}>
+              {isConnected ? "Защищенное соединение активно" : "Нажмите для подключения"}
             </p>
           </motion.div>
         </main>
@@ -111,19 +114,19 @@ export default function Home() {
         {/* Footer / Access Key */}
         <footer className="p-6 w-full">
           <div className="space-y-3">
-            <p className="text-slate-400 text-sm text-center">Your access key</p>
-            <div className="flex gap-2">
+            <p className="text-slate-400 text-sm text-center">Ваш ключ доступа</p>
+            <div className={`flex gap-2 p-1 rounded-2xl transition-all duration-300 border ${isConnected ? "border-primary/30 bg-primary/5 shadow-[0_0_15px_rgba(255,215,0,0.1)]" : "border-transparent"}`}>
               <div className="relative flex-1">
                 <Input 
                   readOnly
                   value="vless://57942d57-17e0-4875-80bc-..." 
-                  className="bg-[#0a0f1e] border-slate-800 text-green-400 font-mono text-xs h-12 rounded-xl focus-visible:ring-primary/50 pl-4"
+                  className={`bg-[#0a0f1e] border-slate-800 font-mono text-xs h-12 rounded-xl pl-4 focus-visible:ring-primary/50 transition-colors ${isConnected ? "text-primary border-primary/30" : "text-green-400"}`}
                 />
               </div>
               <Button 
                 onClick={copyKey}
                 variant="outline" 
-                className="h-12 w-12 rounded-xl border-slate-800 bg-[#0a0f1e] hover:bg-slate-800 hover:text-primary transition-colors p-0"
+                className={`h-12 w-12 rounded-xl bg-[#0a0f1e] hover:bg-slate-800 transition-colors p-0 border-slate-800 ${isConnected ? "text-primary hover:text-primary border-primary/30" : "text-slate-400 hover:text-primary"}`}
               >
                 <Copy className="w-5 h-5" />
               </Button>

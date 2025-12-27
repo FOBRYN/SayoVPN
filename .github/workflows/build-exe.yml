@@ -22,6 +22,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fix electron packages location
+        run: |
+          npm uninstall electron electron-builder
+          npm install --save-dev electron electron-builder
+
       - name: Build Vite app for Electron
         run: npx vite build --outDir electron/dist --base ./
         
